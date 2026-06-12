@@ -1,0 +1,20 @@
+# Secrets — never commit
+Config/Secrets.xcconfig
+
+# macOS
+.DS_Store
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
+*.xcresult
+
+# Swift Package Manager
+.build/
+
+# Server
+server/node_modules/
+server/.wrangler/
+server/dist/
