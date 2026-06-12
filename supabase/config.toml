@@ -1,0 +1,4 @@
+project_id = "gimme"
+
+[functions.interpret]
+verify_jwt = true

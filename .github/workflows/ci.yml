@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  ios:
+    name: Build & test (iOS)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select latest Xcode 16
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$XCODE" ]; then sudo xcode-select -s "$XCODE"; fi
+          xcodebuild -version
+
+      - name: Pick a simulator
+        id: sim
+        run: |
+          DEVICE=$(xcrun simctl list devices available | grep -E '^\s+iPhone' | head -1 | sed -E 's/ \(.*//' | sed 's/^ *//')
+          if [ -z "$DEVICE" ]; then echo "No iPhone simulator available" && exit 1; fi
+          echo "device=$DEVICE" >> "$GITHUB_OUTPUT"
+          echo "Using simulator: $DEVICE"
+
+      - name: Build and test
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Gimme.xcodeproj \
+            -scheme Gimme \
+            -destination "platform=iOS Simulator,name=${{ steps.sim.outputs.device }}" \
+            CODE_SIGNING_ALLOWED=NO \
+            test
+
+  interpreter:
+    name: Typecheck interpreter (Deno)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno check supabase/functions/interpret/index.ts

@@ -1,0 +1,9 @@
+// Base configuration for the Gimme app target.
+// Defaults are empty so a fresh clone builds; real values come from
+// Secrets.xcconfig (gitignored — copy Secrets.example.xcconfig).
+
+GOOGLE_PLACES_API_KEY =
+GIMME_PROXY_URL =
+GIMME_PROXY_AUTH_TOKEN =
+
+#include? "Secrets.xcconfig"
