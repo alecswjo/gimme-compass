@@ -1,0 +1,8 @@
+name = "gimme-interpreter-proxy"
+main = "src/index.ts"
+compatibility_date = "2026-06-01"
+
+# Secrets (set with `wrangler secret put <NAME>`, never in this file):
+#   ANTHROPIC_API_KEY  — required
+#   GIMME_AUTH_TOKEN   — optional shared secret; if set, the app must send the
+#                        same value (GIMME_PROXY_AUTH_TOKEN in Secrets.xcconfig)
