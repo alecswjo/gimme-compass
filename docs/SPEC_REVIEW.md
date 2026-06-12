@@ -16,8 +16,9 @@ Any API key embedded in an iOS binary is recoverable (strings dump / proxy
 interception); an Anthropic key in the wild is an unbounded billing and abuse
 liability. There is no client-side mitigation that actually works.
 
-**Resolution:** LLM interpretation moved behind a ~60-line Cloudflare Worker the user
-controls (`server/`), with an optional shared-secret header. The app works fully
+**Resolution:** LLM interpretation moved behind a small serverless function the
+user controls (a Supabase Edge Function, `supabase/`), with platform JWT auth.
+The app works fully
 without it via the on-device rule-based interpreter — which also covers the latency
 problem: an LLM round-trip (even fast) is a tax on a flow whose entire promise is
 "arrow in under 10 seconds." The proxy gets a hard 1.5 s timeout with silent fallback.

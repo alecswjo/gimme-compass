@@ -176,9 +176,9 @@ booleans.
 │                   (falls back to rules)        │                     searchText       │
 └────────────────────────────────────────────────┼──────────────────────────────────────┘
                                                  ▼
-                                   Cloudflare Worker (server/)
-                                   @anthropic-ai/sdk → claude-opus-4-8
-                                   (Anthropic key lives ONLY here)
+                                Supabase Edge Function (supabase/)
+                                @anthropic-ai/sdk → claude-opus-4-8
+                                (Anthropic key lives ONLY here)
 ```
 
 ### 4.1 Why this shape
@@ -245,27 +245,31 @@ Headers: `X-Goog-Api-Key`, and a **minimal field mask** (billing is per-field-ti
   future "next nearest" gesture is cheap (not in v1 UI).
 - Empty result set arrives as `{}` (no `places` key) — must decode as empty, not error.
 
-### 4.4 Claude proxy (server/, optional deploy)
+### 4.4 Claude interpreter (supabase/, optional deploy)
 
-Cloudflare Worker, TypeScript, official `@anthropic-ai/sdk`.
+Supabase Edge Function (Deno, TypeScript, official `@anthropic-ai/sdk` via the
+`npm:` specifier). Supabase is the project's standing choice for any backend
+need; this function is currently the only backend component.
 
-- `POST /interpret` `{ "query": "zyns" }` → `{ "searchText": "convenience store", "label": "convenience store" }`
+- `POST /functions/v1/interpret` `{ "query": "zyns" }` → `{ "searchText": "convenience store", "label": "convenience store" }`
 - Model: `claude-opus-4-8`, `max_tokens: 256`, **structured output**
   (`output_config.format` JSON schema) so the response is guaranteed parseable.
   No `thinking` param (omitted = off on Opus 4.8): this is a one-hop normalization
   where p95 latency budget is ~1.2 s; reasoning depth buys nothing here.
-- In-isolate LRU cache (query → result) since the query space is tiny and hot.
-- Optional shared-secret header (`X-Gimme-Auth`) checked against a Worker secret so the
-  endpoint isn't an open Anthropic relay.
-- The Worker is **not required** for the app to function (rule-based fallback).
+- In-memory LRU cache per instance (query → result) since the query space is
+  tiny and hot.
+- Auth: Supabase platform JWT verification (`verify_jwt = true`); the app sends
+  the project **anon key** (designed to ship in clients) as `Authorization:
+  Bearer`, so the endpoint isn't an open Anthropic relay.
+- The function is **not required** for the app to work (rule-based fallback).
 
 ### 4.5 Configuration & secrets
 
 | Secret | Where it lives | How it gets there |
 |--------|----------------|-------------------|
 | Google Places API key | `Config/Secrets.xcconfig` (gitignored) → Info.plist at build time | Developer creates from `Config/Secrets.example.xcconfig` |
-| Proxy URL + auth token (optional) | same | same |
-| Anthropic API key | Cloudflare Worker secret (`wrangler secret put`) | never in the repo or app |
+| Interpreter URL + Supabase anon key (optional) | same | same — the anon key is shippable by design |
+| Anthropic API key | Supabase secret (`supabase secrets set`) | never in the repo or app |
 
 `Secrets.xcconfig` is optionally `#include?`d so a fresh clone **builds without it**;
 the app then shows the Setup-required state. Note: xcconfig treats `//` as a comment,
@@ -471,8 +475,9 @@ push/PR. Server: `tsc --noEmit` typecheck.
 1. Google Cloud: Places API (New) enabled; key restricted to iOS bundle
    `ai.florafauna.gimme` **and** API-restricted to Places API (New).
 2. `Secrets.xcconfig` present locally / in CI signing lane; never committed.
-3. (Optional) Worker deployed; `ANTHROPIC_API_KEY` + `GIMME_AUTH_TOKEN` set via
-   `wrangler secret put`; proxy URL added to Secrets.
+3. (Optional) Edge Function deployed (`supabase functions deploy interpret`);
+   `ANTHROPIC_API_KEY` set via `supabase secrets set`; function URL + anon key
+   added to Secrets.
 4. App icon assets added (placeholder catalog ships in repo).
 5. Privacy nutrition labels in App Store Connect match §8.
 6. Manual device pass (§9) on a physical iPhone.
@@ -488,7 +493,7 @@ push/PR. Server: `tsc --noEmit` typecheck.
 | M2 | LocationService, PlacesClient + tests |
 | M3 | ViewModel + tests, full state machine |
 | M4 | Views (all states), accessibility, polish |
-| M5 | Proxy worker, README, CI, release checklist |
+| M5 | Interpreter Edge Function, README, CI, release checklist |
 
 All milestones ship in this build.
 

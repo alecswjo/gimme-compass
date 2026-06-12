@@ -14,7 +14,8 @@ build/
 # Swift Package Manager
 .build/
 
-# Server
-server/node_modules/
-server/.wrangler/
-server/dist/
+# Supabase local artifacts
+supabase/.branches/
+supabase/.temp/
+.env
+.env.*

@@ -24,7 +24,7 @@ the nearest place that has it and tells you how far. That's the whole app.
 - **Platform:** iOS 17+, iPhone, SwiftUI, Xcode 16+
 - **Search:** Google Places API (New) Text Search, ranked by distance
 - **Query smarts:** on-device rules ("zyns" → convenience store) + optional
-  Claude-powered interpreter behind a tiny proxy ([`server/`](server/README.md))
+  Claude-powered interpreter on Supabase ([`supabase/`](supabase/README.md))
 
 ## Quick start
 
@@ -47,10 +47,12 @@ the nearest place that has it and tells you how far. That's the whole app.
 ### Optional: Claude-powered query understanding
 
 The on-device interpreter covers the common cases. To handle the long tail
-("hangover cure", "that pink drink"), deploy the Cloudflare Worker in
-[`server/`](server/README.md) and add its URL to `Secrets.xcconfig`. The
-Anthropic API key lives only in the Worker — never in the app. If the proxy is
-slow (>1.5 s) or down, the app silently falls back to the on-device rules.
+("hangover cure", "that pink drink"), deploy the Supabase Edge Function in
+[`supabase/`](supabase/README.md) and add its URL + your project's anon key to
+`Secrets.xcconfig`. The Anthropic API key lives only in Supabase secrets —
+never in the app. If the function is slow (>1.5 s) or down, the app silently
+falls back to the on-device rules. This is the app's only backend component,
+and it's optional.
 
 ## How it works
 
@@ -87,7 +89,7 @@ Gimme/                  app target (synchronized folder — files added on disk 
   Resources/            assets, PrivacyInfo.xcprivacy
 GimmeTests/             unit tests (pure logic, stubbed network, mocked location)
 Config/                 Info.plist, xcconfigs (secrets pattern)
-server/                 optional Claude interpreter proxy (Cloudflare Worker)
+supabase/               optional Claude interpreter (Supabase Edge Function)
 docs/                   SPEC.md, SPEC_REVIEW.md
 ```
 
@@ -104,7 +106,7 @@ decoding + error mapping (via `URLProtocol` stub), and the view-model state
 machine (latest-wins cancellation, arrival hysteresis, movement re-search,
 permission flows) — all with no network or CoreLocation dependency.
 
-CI runs the iOS tests and typechecks the worker on every PR
+CI runs the iOS tests and typechecks the Edge Function on every PR
 (`.github/workflows/ci.yml`).
 
 ### Manual device pass (before shipping)

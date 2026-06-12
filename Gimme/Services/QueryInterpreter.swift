@@ -61,8 +61,11 @@ struct RuleBasedInterpreter: QueryInterpreting {
     }
 }
 
-/// Optional Claude-backed interpreter. Talks to the Gimme proxy (server/), never
-/// to Anthropic directly — no LLM API key ships in the app (spec §4.1).
+/// Optional Claude-backed interpreter. Talks to the Gimme interpreter — a
+/// Supabase Edge Function (supabase/) — never to Anthropic directly, so no LLM
+/// API key ships in the app (spec §4.1). `authToken` is the Supabase anon key,
+/// which is designed to be shipped in clients; Supabase verifies it as a JWT
+/// before the function runs.
 /// Hard 1.5 s budget; any failure silently falls back to the rule-based
 /// interpreter. The user should never be able to tell an LLM was involved.
 struct ClaudeProxyInterpreter: QueryInterpreting {
@@ -89,7 +92,7 @@ struct ClaudeProxyInterpreter: QueryInterpreting {
             request.timeoutInterval = timeout
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             if let authToken {
-                request.setValue(authToken, forHTTPHeaderField: "X-Gimme-Auth")
+                request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
             }
             request.httpBody = try JSONEncoder().encode(RequestBody(query: RuleBasedInterpreter.normalize(raw)))
 
